@@ -56,119 +56,78 @@ def dropPiece(col: int, color: int) -> bool:
             return True
     return False
 
-def scoreBoard(agentColor: int) -> int:
-    # return score of board for agent
-    # score is number of 3 in a rows for agent minus number of 3 in a rows for opponent
-    # 3 in a row is 100 points, 2 in a row is 10 points, 1 in a row is 1 point
-    # 3 in a row is 100 points, 2 in a row is 10 points, 1 in a row is 1 point
-    # check horizontal
-    score = 0
-    for row in board:
-        for i in range(4):
-            if row[i] == row[i+1] == row[i+2] == agentColor:
-                score += 100
-            elif row[i] == row[i+1] == row[i+2] != 0:
-                score -= 100
-            elif row[i] == row[i+1] == agentColor:
-                score += 10
-            elif row[i] == row[i+1] != 0:
-                score -= 10
-            elif row[i] == agentColor:
-                score += 1
-            elif row[i] != 0:
-                score -= 1
-    # check vertical
-    for i in range(7):
-        for j in range(3):
-            if board[j][i] == board[j+1][i] == board[j+2][i] == agentColor:
-                score += 100
-            elif board[j][i] == board[j+1][i] == board[j+2][i] != 0:
-                score -= 100
-            elif board[j][i] == board[j+1][i] == agentColor:
-                score += 10
-            elif board[j][i] == board[j+1][i] != 0:
-                score -= 10
-            elif board[j][i] == agentColor:
-                score += 1
-            elif board[j][i] != 0:
-                score -= 1
-    
-    # check diagonal
-    for i in range(3):
-        for j in range(4):
-            if board[i][j] == board[i+1][j+1] == board[i+2][j+2] == agentColor:
-                score += 100
-            elif board[i][j] == board[i+1][j+1] == board[i+2][j+2] != 0:
-                score -= 100
-            elif board[i][j] == board[i+1][j+1] == agentColor:
-                score += 10
-            elif board[i][j] == board[i+1][j+1] != 0:
-                score -= 10
-            elif board[i][j] == agentColor:
-                score += 1
-            elif board[i][j] != 0:
-                score -= 1
-    
-    for i in range(3):
-        for j in range(4):
-            if board[i][j+3] == board[i+1][j+2] == board[i+2][j+1] == agentColor:
-                score += 100
-            elif board[i][j+3] == board[i+1][j+2] == board[i+2][j+1] != 0:
-                score -= 100
-            elif board[i][j+3] == board[i+1][j+2] == agentColor:
-                score += 10
-            elif board[i][j+3] == board[i+1][j+2] != 0:
-                score -= 10
-            elif board[i][j+3] == agentColor:
-                score += 1
-            elif board[i][j+3] != 0:
-                score -= 1
-    
-    return score
-
-def agentMove(agentColor: int) -> int:
-    # return column to drop piece in
-    # Get all possible moves for agent
+# Use a minimax algorithm to find the best move for the agent
+def agentMove(color: int, depth: int = 4):
+    # return the column the agent should drop its piece in
+    # if no move is possible, return -1
+    # get old board
     global board
-    originalBoard = np.copy(board)
+    oldBoard = np.copy(board)
 
-    possibleMoves = []
+    # check if agent can win in one move
     for i in range(7):
-        if dropPiece(i, agentColor):
-            possibleMoves.append(i)
-            board = np.copy(originalBoard)
-    
-    # score each move
-    scores = []
-    for move in possibleMoves:
-        dropPiece(move, agentColor)
-        scores.append(scoreBoard(agentColor))
-        board = np.copy(originalBoard)
-    
-    # get opponent's best move
-    opponentColor = 3 - agentColor
-    oppPossibleMoves = []
-    for i in range(7):
-        if dropPiece(i, opponentColor):
-            oppPossibleMoves.append(i)
-            board = np.copy(originalBoard)
-    
-    # score each move
-    opponentScores = []
-    for move in oppPossibleMoves:
-        dropPiece(move, opponentColor)
-        opponentScores.append(scoreBoard(opponentColor))
-        board = np.copy(originalBoard)
-    
-    # get opponent's best move
-    opponentBestMove = oppPossibleMoves[opponentScores.index(max(opponentScores))]
+        if dropPiece(i, color):
+            if checkWin() == color:
+                board = np.copy(oldBoard)
+                return i
+            board = np.copy(oldBoard)
 
-    # if opponent has a winning move, block it
-    if max(opponentScores) >= 100:
-        return opponentBestMove
+
+    bestMove = np.random.randint(0, 7)
+    randomMove = True
+    bestScore = -100000000
+    for i in range(7):
+        if dropPiece(i, color):
+            score = minimax(depth, False, -100000000, 100000000)
+            board = np.copy(oldBoard)
+            if score > bestScore:
+                bestScore = score
+                randomMove = False
+                bestMove = i
     
-    # return move with highest score
-    return possibleMoves[scores.index(max(scores))]
+    if bestMove != -1:
+        randomMove = False
+
+    return [bestMove, bestScore, randomMove]
+
+def minimax(depth: int, isMaximizing: bool, alpha: int, beta: int) -> int:
+    # return the score of the best move
+    # if isMaximizing is true, return the highest score
+    # if isMaximizing is false, return the lowest score
+    # alpha and beta are used for alpha-beta pruning
+    global board
+    oldBoard = np.copy(board)
+
+    if checkWin() == 1:
+        return 100000000
+    elif checkWin() == 2:
+        return -100000000
+    elif checkTie():
+        return 0
+    if depth == 0:
+        return 0
+    if isMaximizing:
+        bestScore = -100000000
+        for i in range(7):
+            if dropPiece(i, 1):
+                score = minimax(depth-1, False, alpha, beta)
+                board = np.copy(oldBoard)
+                bestScore = max(bestScore, score)
+                alpha = max(alpha, score)
+                if beta <= alpha:
+                    break
+        return bestScore
+    else:
+        bestScore = 100000000
+        for i in range(7):
+            if dropPiece(i, 2):
+                score = minimax(depth-1, True, alpha, beta)
+                board = np.copy(oldBoard)
+                bestScore = min(bestScore, score)
+                beta = min(beta, score)
+                if beta <= alpha:
+                    break
+        return bestScore
 
 def playGame(isAgent: bool, agentColor: int = 0):
     turn = int(input("Who goes first? (1 for red, 2 for yellow): "))
@@ -178,8 +137,12 @@ def playGame(isAgent: bool, agentColor: int = 0):
         if isAgent and turn == agentColor:
             print("Agent's turn")
             print("Agent is thinking...")
-            move = agentMove(agentColor)
-            print("Agent dropped piece in column", move)
+            [move, score, isRandom] = agentMove(agentColor, 9)
+            print("Agent dropped piece in column", move, "with score", score, end="")
+            if isRandom:
+                print(" (random move)")
+            else:
+                print()
             dropPiece(move, agentColor)
         elif isAgent and turn != agentColor:
             print("Your turn")
