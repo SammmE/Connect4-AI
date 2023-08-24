@@ -131,13 +131,15 @@ def minimax(depth: int, isMaximizing: bool, alpha: int, beta: int) -> int:
 
 def playGame(isAgent: bool, agentColor: int = 0):
     turn = int(input("Who goes first? (1 for red, 2 for yellow): "))
-    firstTurn = turn
     printBoard()
+    agentDifficulty = -1
     while True:
         if isAgent and turn == agentColor:
+            if agentDifficulty == -1:
+                agentDifficulty = int(input("What difficulty do you want the agent to be? (1-9) 4 is the middleground: "))
             print("Agent's turn")
             print("Agent is thinking...")
-            [move, score, isRandom] = agentMove(agentColor, 9)
+            [move, score, isRandom] = agentMove(agentColor, agentDifficulty)
             print("Agent dropped piece in column", move, "with score", score, end="")
             if isRandom:
                 print(" (random move)")
